@@ -1,4 +1,6 @@
-
+import { useAuth } from "@/auth/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -11,6 +13,15 @@ import { Bike, Calendar, Users, Gauge, Timer } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/tela-home", { replace: true });
+    }
+  }, [user, navigate]);
+
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const getAvailableCount = () => {
@@ -26,7 +37,6 @@ const Index = () => {
   };
 
   const getTotalRideTime = () => {
-    // This would typically be calculated from real data
     return "256 hrs";
   };
 
@@ -36,6 +46,19 @@ const Index = () => {
       <div className="flex-1 flex flex-col">
         <Header />
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold">
+              {user ? `Bem-vindo, ${user.name}!` : "Dashboard"}
+            </h2>
+            {user && (
+              <button
+                onClick={logout}
+                className="inline-flex items-center gap-2 text-red-600 border border-red-200 rounded px-3 py-1 text-sm hover:bg-red-50"
+              >
+                Sair
+              </button>
+            )}
+          </div>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>

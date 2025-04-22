@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { MapPin, Settings } from "lucide-react";
+import { LoginModal } from "@/components/auth/LoginModal";
 
 export default function TelaHome() {
   const navigate = useNavigate();
@@ -67,6 +68,7 @@ export default function TelaHome() {
             Upgrade para Premium
           </Button>
         </div>
+        <LoginModal />
       </div>
       <footer className="w-full mt-8">
         <div className="w-full max-w-md mx-auto border border-dashed border-gray-300 rounded-md py-3 text-center text-xs text-gray-500 bg-gray-50">
