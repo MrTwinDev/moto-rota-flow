@@ -1,11 +1,96 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from "react";
+import { Header } from "@/components/layout/Header";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { MotorcycleList } from "@/components/motorcycle/MotorcycleList";
+import { ScheduleCalendar } from "@/components/schedule/ScheduleCalendar";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { UpcomingRotations } from "@/components/dashboard/UpcomingRotations";
+import { motorcycles, riders, schedules } from "@/data/mockData";
+import { Bike, Calendar, Users, Gauge, Timer } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  const getAvailableCount = () => {
+    return motorcycles.filter(m => m.status === "available").length;
+  };
+
+  const getInUseCount = () => {
+    return motorcycles.filter(m => m.status === "in-use").length;
+  };
+
+  const getMaintenanceCount = () => {
+    return motorcycles.filter(m => m.status === "maintenance").length;
+  };
+
+  const getTotalRideTime = () => {
+    // This would typically be calculated from real data
+    return "256 hrs";
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen flex bg-muted/20">
+      <Sidebar />
+      <div className="flex-1 flex flex-col">
+        <Header />
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="motorcycles">Motorcycles</TabsTrigger>
+              <TabsTrigger value="schedule">Schedule</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="dashboard" className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatsCard 
+                  title="Available Motorcycles" 
+                  value={`${getAvailableCount()}/${motorcycles.length}`} 
+                  description="Ready for rotation"
+                  icon={<Bike className="h-full w-full" />}
+                  trend={{ value: 5, isPositive: true }}
+                />
+                <StatsCard 
+                  title="In Use" 
+                  value={`${getInUseCount()}`} 
+                  description="Currently assigned"
+                  icon={<Timer className="h-full w-full" />}
+                />
+                <StatsCard 
+                  title="Active Riders" 
+                  value={`${riders.length}`} 
+                  description="Qualified personnel"
+                  icon={<Users className="h-full w-full" />}
+                  trend={{ value: 10, isPositive: true }}
+                />
+                <StatsCard 
+                  title="Total Ride Time" 
+                  value={getTotalRideTime()} 
+                  description="This month"
+                  icon={<Gauge className="h-full w-full" />}
+                  trend={{ value: 8, isPositive: true }}
+                />
+              </div>
+              
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
+                  <MotorcycleList motorcycles={motorcycles.slice(0, 3)} />
+                </div>
+                <UpcomingRotations schedules={schedules} />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="motorcycles">
+              <MotorcycleList motorcycles={motorcycles} />
+            </TabsContent>
+            
+            <TabsContent value="schedule">
+              <ScheduleCalendar schedules={schedules} />
+            </TabsContent>
+          </Tabs>
+        </main>
       </div>
     </div>
   );
