@@ -1,4 +1,4 @@
-
+// src/pages/Login.tsx
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim() || !password.trim()) {
       toast({
         title: "Erro",
@@ -32,25 +32,26 @@ export default function Login() {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
-      const { error } = await login({ email, password });
-      
+      const error = await login({ email, password });
+
       if (error) {
-        const errorMessage = error.message.includes("Invalid login credentials")
+        const errorMessage = error.includes("Invalid login credentials")fix: adicionar confirmação de senha e auto-login no SignUp
           ? "E-mail ou senha incorretos"
-          : error.message;
+          : error;
 
         toast({
           title: "Erro ao entrar",
           description: errorMessage,
           variant: "destructive",
         });
+        return;
       }
-      // On success, user will be automatically redirected by useEffect
-    } catch (error: any) {
+      // On success, user will be redirected by useEffect
+    } catch (err) {
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao tentar entrar",
@@ -93,7 +94,10 @@ export default function Login() {
           </Button>
           <div className="text-center mt-4">
             <p className="text-sm text-gray-500">
-              Ainda não tem conta? <Link to="/signup" className="text-blue-600 hover:underline">Cadastre-se aqui</Link>
+              Ainda não tem conta?{" "}
+              <Link to="/signup" className="text-blue-600 hover:underline">
+                Cadastre-se aqui
+              </Link>
             </p>
           </div>
         </form>
