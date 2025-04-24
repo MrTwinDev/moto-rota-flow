@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -6,9 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { MapPin, Settings } from "lucide-react";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { useMoto } from "@/context/MotoContext";
 
 export default function TelaHome() {
   const navigate = useNavigate();
+  const { moto } = useMoto();
   const [origem, setOrigem] = useState("");
   const [destino, setDestino] = useState("");
 
@@ -19,6 +20,25 @@ export default function TelaHome() {
           <h1 className="text-4xl font-extrabold text-gray-900 text-center">MotoRota BR</h1>
           <h2 className="text-lg font-medium text-gray-600 text-center">Sua rota, sua estrada.</h2>
         </div>
+
+        {moto ? (
+          <div className="w-full max-w-md bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-600">
+              Moto: {moto.model} | Combustível: {moto.fuelType} | Autonomia: {moto.autonomyKm} km
+            </p>
+          </div>
+        ) : (
+          <div className="w-full max-w-md text-center">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/configurar-moto")}
+              className="w-full"
+            >
+              Configurar Moto
+            </Button>
+          </div>
+        )}
+
         <form className="flex flex-col gap-4 w-full max-w-md mt-6" onSubmit={e => { e.preventDefault(); navigate("/rota-gerada"); }}>
           <div>
             <Label htmlFor="origem" className="mb-1 flex items-center gap-1 text-base">
@@ -45,8 +65,15 @@ export default function TelaHome() {
               className="mt-1"
             />
           </div>
-          <Button type="submit" className="mt-2">Planejar Rota</Button>
+          <Button 
+            type="submit" 
+            className="mt-2"
+            disabled={!moto}
+          >
+            Planejar Rota
+          </Button>
         </form>
+
         <div className="flex flex-col items-center mt-2">
           <Button
             variant="link"
@@ -58,6 +85,7 @@ export default function TelaHome() {
             Configurar Moto
           </Button>
         </div>
+
         <div className="flex flex-col items-center gap-1 mt-8">
           <p className="text-xs text-gray-500">Quer mais controle da sua viagem?</p>
           <Button

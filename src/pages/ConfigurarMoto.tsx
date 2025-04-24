@@ -1,9 +1,10 @@
 
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MenuLateral } from "@/components/MenuLateral";
 import { Bike, Fuel } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMoto } from "@/context/MotoContext";
 
 const combustiveis = [
   { label: "Gasolina", value: "gasolina" },
@@ -13,15 +14,21 @@ const combustiveis = [
 
 export default function ConfigurarMoto() {
   const navigate = useNavigate();
-  const [modelo, setModelo] = useState("");
-  const [tipoCombustivel, setTipoCombustivel] = useState("gasolina");
-  const [autonomia, setAutonomia] = useState("");
-  const [tanque, setTanque] = useState("");
+  const { moto, setMoto } = useMoto();
+  const [modelo, setModelo] = useState(moto?.model || "");
+  const [tipoCombustivel, setTipoCombustivel] = useState(moto?.fuelType || "gasolina");
+  const [autonomia, setAutonomia] = useState(moto?.autonomyKm?.toString() || "");
+  const [tanque, setTanque] = useState(moto?.tankCapacity?.toString() || "");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Salvar dados (mock)
-    navigate("/tela-home");
+    setMoto({
+      model: modelo,
+      fuelType: tipoCombustivel,
+      autonomyKm: Number(autonomia),
+      tankCapacity: tanque ? Number(tanque) : undefined
+    });
+    navigate("/");
   }
 
   return (
@@ -74,7 +81,9 @@ export default function ConfigurarMoto() {
             />
           </div>
           <div>
-            <label className="block font-medium mb-1">Capacidade do tanque (litros) <span className="text-gray-400 text-xs">(opcional)</span></label>
+            <label className="block font-medium mb-1">
+              Capacidade do tanque (litros) <span className="text-gray-400 text-xs">(opcional)</span>
+            </label>
             <input
               type="number"
               className="w-full rounded border px-4 py-2 bg-gray-50 outline-none focus:border-primary"
