@@ -1,130 +1,109 @@
+// src/pages/Login.tsx
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "@/lib/supabase";
-import { User, Session } from "@supabase/supabase-js";
-
-type AuthUser = {
-  id: string;
-  email: string;
-  name: string;
-  is_premium: boolean;
-};
-
-type AuthContextType = {
-  user: AuthUser | null;
-  session: Session | null;
-  login: (credentials: { email: string; password: string }) => Promise<{ error?: string }>;
-  signup: (credentials: { email: string; password: string }) => Promise<{ error?: string }>;
-  logout: () => Promise<void>;
-  loading: boolean;
-};
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login, user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        setSession(currentSession);
-        if (currentSession?.user) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', currentSession.user.id)
-            .single();
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
-          if (profile) {
-            setUser({
-              id: currentSession.user.id,
-              email: profile.email,
-              name: profile.name,
-              is_premium: profile.is_premium,
-            });
-          }
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-      }
-    );
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      if (currentSession?.user) {
-        supabase
-          .from('users')
-          .select('*')
-          .eq('id', currentSession.user.id)
-          .single()
-          .then(({ data: profile }) => {
-            if (profile) {
-              setUser({
-                id: currentSession.user.id,
-                email: profile.email,
-                name: profile.name,
-                is_premium: profile.is_premium,
-              });
-            }
-          });
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const signup = async ({ email, password }: { email: string; password: string }) => {
-    try {
-      const { error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          data: {
-            name: email.split('@')[0],
-            is_premium: false,
-          }
-        }
+    if (!email.trim() || !password.trim()) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos",
+        variant: "destructive",
       });
-      if (error) return { error: error.message };
-      return {};
-    } catch (error: any) {
-      return { error: error.message || "Failed to sign up" };
+      return;
     }
-  };
 
-  const login = async ({ email, password }: { email: string; password: string }) => {
+    setIsLoading(true);
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { error: error.message };
-      return {};
-    } catch (error: any) {
-      return { error: error.message || "Failed to sign in" };
-    }
-  };
+      // Agora destructuramos o { error } que vem do AuthContext
+      const { error } = await login({ email, password });
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+      if (error) {
+        // Como `error` é sempre string ou undefined, `includes` funciona
+        const errorMessage = error.includes("Invalid login credentials")
+          ? "E-mail ou senha incorretos"
+          : error;
+
+        toast({
+          title: "Erro ao entrar",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+      // Sucesso: redirecionamento via useEffect
+    } catch {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao tentar entrar",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, login, signup, logout, loading }}>
-      {children}
-    </AuthContext.Provider>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#28282e] to-[#191a23]">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
+        <h1 className="text-2xl font-bold text-center mb-6">Entrar no MotoRota BR</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Digite seu email"
+              className="w-full"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Digite sua senha"
+              className="w-full"
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Entrando..." : "Entrar"}
+          </Button>
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-500">
+              Ainda não tem conta?{" "}
+              <Link to="/signup" className="text-blue-600 hover:underline">
+                Cadastre-se aqui
+              </Link>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
 }
