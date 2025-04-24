@@ -1,3 +1,4 @@
+
 // src/pages/Login.tsx
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -6,13 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, user } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -37,24 +39,26 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // Chama o login e obtém { error?: string }
-      const { error } = await login({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (error) {
         // Traduz mensagem padrão do Supabase
-        const errorMessage = error.includes("Invalid login credentials")
+        const errorMessage = error.message.includes("Invalid login credentials")
           ? "E-mail ou senha incorretos"
-          : error;
+          : error.message;
 
         toast({
           title: "Erro ao entrar",
           description: errorMessage,
           variant: "destructive",
         });
-        return;
+      } else if (data.user) {
+        // Navigate acontecerá automaticamente pelo useEffect que monitora user
       }
-      // Se não houver erro, o useEffect cuidará do redirect
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao tentar entrar",

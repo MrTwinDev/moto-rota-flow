@@ -1,3 +1,4 @@
+
 // src/pages/SignUp.tsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -33,7 +34,11 @@ export default function SignUp() {
 
     try {
       // 2) criar usuário no Auth
-      const { error: signUpError } = await supabase.auth.signUp({ email: email.trim(), password });
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
+        email: email.trim(), 
+        password 
+      });
+      
       if (signUpError) {
         throw new Error(
           signUpError.message.includes("already registered")
@@ -43,31 +48,13 @@ export default function SignUp() {
       }
 
       // 3) login imediato para obter sessão válida
-      const { error: loginError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: loginError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
+      
       if (loginError) {
         throw new Error("Erro ao entrar: " + loginError.message);
-      }
-
-      // 4) obtém o user ID agora que estamos autenticados
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-      if (!currentUser) {
-        throw new Error("Usuário autenticado não encontrado.");
-      }
-
-      // 5) upsert no perfil (RLS permite porque auth.uid() = currentUser.id)
-      const { error: profileError } = await supabase.from("users").upsert({
-        id: currentUser.id,
-        email: currentUser.email!,
-        name: currentUser.email!.split("@")[0],
-        is_premium: false,
-      });
-      if (profileError) {
-        throw new Error("Falha ao salvar perfil: " + profileError.message);
       }
 
       // 6) redireciona ao dashboard
