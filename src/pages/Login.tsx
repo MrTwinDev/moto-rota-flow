@@ -39,7 +39,7 @@ export default function Login() {
       const error = await login({ email, password });
 
       if (error) {
-        const errorMessage = error.includes("Invalid login credentials")fix: adicionar confirmação de senha e auto-login no SignUp
+        const errorMessage = error.includes("Invalid login credentials")
           ? "E-mail ou senha incorretos"
           : error;
 
@@ -50,8 +50,8 @@ export default function Login() {
         });
         return;
       }
-      // On success, user will be redirected by useEffect
-    } catch (err) {
+      // No error: user redirected by useEffect
+    } catch {
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao tentar entrar",
