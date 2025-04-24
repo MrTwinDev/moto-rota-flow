@@ -14,6 +14,7 @@ type AuthContextType = {
   user: AuthUser | null;
   session: Session | null;
   login: (credentials: { email: string; password: string }) => Promise<{ error?: string }>;
+  signup: (credentials: { email: string; password: string }) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   loading: boolean;
 };
@@ -25,20 +26,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize: check current session and subscribe to auth changes
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         setSession(currentSession);
         if (currentSession?.user) {
-          // Extract user data and premium status
-          setUser({
-            id: currentSession.user.id,
-            email: currentSession.user.email || '',
-            name: currentSession.user.user_metadata.name || currentSession.user.email?.split('@')[0] || 'User',
-            is_premium: currentSession.user.user_metadata.is_premium || false,
-          });
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', currentSession.user.id)
+            .single();
+
+          if (profile) {
+            setUser({
+              id: currentSession.user.id,
+              email: profile.email,
+              name: profile.name,
+              is_premium: profile.is_premium,
+            });
+          }
         } else {
           setUser(null);
         }
@@ -50,12 +57,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       if (currentSession?.user) {
-        setUser({
-          id: currentSession.user.id,
-          email: currentSession.user.email || '',
-          name: currentSession.user.user_metadata.name || currentSession.user.email?.split('@')[0] || 'User',
-          is_premium: currentSession.user.user_metadata.is_premium || false,
-        });
+        supabase
+          .from('users')
+          .select('*')
+          .eq('id', currentSession.user.id)
+          .single()
+          .then(({ data: profile }) => {
+            if (profile) {
+              setUser({
+                id: currentSession.user.id,
+                email: profile.email,
+                name: profile.name,
+                is_premium: profile.is_premium,
+              });
+            }
+          });
       }
       setLoading(false);
     });
@@ -65,9 +81,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const signup = async ({ email, password }: { email: string; password: string }) => {
+    try {
+      const { error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: {
+            name: email.split('@')[0],
+            is_premium: false,
+          }
+        }
+      });
+      if (error) return { error: error.message };
+      return {};
+    } catch (error: any) {
+      return { error: error.message || "Failed to sign up" };
+    }
+  };
+
   const login = async ({ email, password }: { email: string; password: string }) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
       return {};
     } catch (error: any) {
@@ -82,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, session, login, signup, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

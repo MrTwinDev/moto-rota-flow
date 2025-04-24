@@ -4,18 +4,16 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signup, user } = useAuth();
   const { toast } = useToast();
-  const { user } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -27,7 +25,7 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!email.trim() || !password.trim()) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos",
@@ -36,15 +34,6 @@ export default function SignUp() {
       return;
     }
 
-    if (password !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     if (password.length < 6) {
       toast({
         title: "Erro",
@@ -57,29 +46,21 @@ export default function SignUp() {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          data: {
-            name: email.split('@')[0],
-            is_premium: false,
-          }
-        }
-      });
+      const { error } = await signup({ email, password });
       
       if (error) {
         toast({
           title: "Erro ao criar conta",
-          description: error.message,
+          description: error,
           variant: "destructive",
         });
       } else {
+        // User will be automatically redirected to dashboard by the useEffect above
+        // when the auth state changes
         toast({
           title: "Conta criada com sucesso",
-          description: "Você já pode fazer login com suas credenciais",
+          description: "Bem-vindo ao MotoRota BR!",
         });
-        navigate("/login");
       }
     } catch (error: any) {
       toast({
@@ -116,17 +97,6 @@ export default function SignUp() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Digite sua senha"
-              className="w-full"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirme sua senha"
               className="w-full"
             />
           </div>

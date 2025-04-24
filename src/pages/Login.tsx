@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -45,10 +44,8 @@ export default function Login() {
           description: error,
           variant: "destructive",
         });
-      } else {
-        navigate("/dashboard");
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao tentar entrar",

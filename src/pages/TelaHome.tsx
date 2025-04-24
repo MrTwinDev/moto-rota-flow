@@ -27,7 +27,7 @@ export default function TelaHome() {
   const handlePlanejamento = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (origem && destino) {
+    if (origem && destino && moto) {  // Only allow if moto is configured
       sessionStorage.setItem('origem', origem);
       sessionStorage.setItem('destino', destino);
       
