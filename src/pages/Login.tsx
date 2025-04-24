@@ -24,6 +24,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validação de campos
     if (!email.trim() || !password.trim()) {
       toast({
         title: "Erro",
@@ -36,9 +37,11 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const error = await login({ email, password });
+      // Chama o login e obtém { error?: string }
+      const { error } = await login({ email, password });
 
       if (error) {
+        // Traduz mensagem padrão do Supabase
         const errorMessage = error.includes("Invalid login credentials")
           ? "E-mail ou senha incorretos"
           : error;
@@ -50,8 +53,8 @@ export default function Login() {
         });
         return;
       }
-      // No error: user redirected by useEffect
-    } catch {
+      // Se não houver erro, o useEffect cuidará do redirect
+    } catch (err) {
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao tentar entrar",
@@ -65,7 +68,9 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#28282e] to-[#191a23]">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">Entrar no MotoRota BR</h1>
+        <h1 className="text-2xl font-bold text-center mb-6">
+          Entrar no MotoRota BR
+        </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
