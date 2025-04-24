@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ export default function Login() {
   const { login, user } = useAuth();
   const { toast } = useToast();
 
-  // Redirect if already logged in
   useEffect(() => {
     if (user) {
       navigate("/dashboard");
@@ -39,12 +39,17 @@ export default function Login() {
       const { error } = await login({ email, password });
       
       if (error) {
+        const errorMessage = error.message.includes("Invalid login credentials")
+          ? "E-mail ou senha incorretos"
+          : error.message;
+
         toast({
           title: "Erro ao entrar",
-          description: error,
+          description: errorMessage,
           variant: "destructive",
         });
       }
+      // On success, user will be automatically redirected by useEffect
     } catch (error: any) {
       toast({
         title: "Erro",
