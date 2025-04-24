@@ -1,97 +1,106 @@
-
-import { useState, useEffect } from "react";
+// src/pages/SignUp.tsx
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabase";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { signup, login, user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // 1) Validação de campos
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos",
+        description: "Por favor, preencha todos os campos.",
         variant: "destructive",
       });
       return;
     }
 
+    // 2) Validação de confirmação de senha
     if (password !== confirmPassword) {
       toast({
         title: "Erro",
-        description: "As senhas não coincidem",
+        description: "As senhas não coincidem.",
         variant: "destructive",
       });
       return;
     }
 
-    if (password.length < 6) {
-      toast({
-        title: "Erro",
-        description: "A senha deve ter pelo menos 6 caracteres",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setIsLoading(true);
-    
+
     try {
-      const { error: signupError } = await signup({ email, password });
-      
-      if (signupError) {
-        const errorMessage = signupError.message.includes("already registered") 
-          ? "Este e-mail já está em uso"
-          : signupError.message;
-          
-        toast({
-          title: "Erro ao criar conta",
-          description: errorMessage,
-          variant: "destructive",
-        });
+      // 3) Cria usuário no Auth
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: email.split("@")[0],
+            is_premium: false,
+          },
+        },
+      });
+
+      if (signUpError) {
+        const raw = signUpError.message ?? "";
+        const msg = raw.includes("already registered")
+          ? "Este e-mail já está em uso."
+          : raw || "Não foi possível criar a conta.";
+        toast({ title: "Erro ao cadastrar", description: msg, variant: "destructive" });
         return;
       }
 
-      // Auto login after successful signup
-      const { error: loginError } = await login({ email, password });
-      
+      // 4) Insere perfil na tabela public.users
+      const user = supabase.auth.getUser().then(res => res.data.user);
+      if (user) {
+        const { error: profileError } = await supabase
+          .from("users")
+          .insert({
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.name || user.email.split("@")[0],
+            is_premium: false,
+          });
+        if (profileError) {
+          toast({
+            title: "Erro",
+            description: profileError.message ?? "Falha ao criar perfil.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // 5) Login automático
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) {
+        const raw = loginError.message ?? "";
         toast({
           title: "Erro ao entrar",
-          description: "Conta criada com sucesso, mas houve um erro ao fazer login automático",
+          description: raw || "Não foi possível entrar após cadastro.",
           variant: "destructive",
         });
-        navigate("/login");
         return;
       }
 
-      // Success - user will be automatically redirected to dashboard by useEffect
+      // 6) Redireciona para Dashboard
+      navigate("/dashboard");
+    } catch (err: any) {
       toast({
-        title: "Conta criada com sucesso",
-        description: "Bem-vindo ao MotoRota BR!",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message || "Ocorreu um erro ao tentar criar a conta",
+        title: "Erro inesperado",
+        description: err.message ?? "Algo deu errado.",
         variant: "destructive",
       });
     } finally {
@@ -103,7 +112,7 @@ export default function SignUp() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#28282e] to-[#191a23]">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
         <h1 className="text-2xl font-bold text-center mb-6">Criar Conta no MotoRota BR</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSignUp} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -133,16 +142,19 @@ export default function SignUp() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Digite sua senha novamente"
+              placeholder="Repita sua senha"
               className="w-full"
             />
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Criando conta..." : "Criar Conta"}
+            {isLoading ? "Registrando..." : "Criar Conta"}
           </Button>
           <div className="text-center mt-4">
             <p className="text-sm text-gray-500">
-              Já tem uma conta? <Link to="/login" className="text-blue-600 hover:underline">Entre aqui</Link>
+              Já tem conta?{" "}
+              <Link to="/login" className="text-blue-600 hover:underline">
+                Entre aqui
+              </Link>
             </p>
           </div>
         </form>
