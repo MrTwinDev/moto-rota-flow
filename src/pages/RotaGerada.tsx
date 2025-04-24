@@ -1,3 +1,4 @@
+
 import { useNavigate, useLocation } from "react-router-dom";
 import { MapPin, Route, Fuel, Star, Info } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -48,6 +49,7 @@ export default function RotaGerada() {
     origem: "",
     destino: "",
     distancia: "",
+    distanciaKm: 0,
     tempo: "",
     paradas: [] as { local: string; marker: number }[]
   });
@@ -70,6 +72,7 @@ export default function RotaGerada() {
     setRota({
       origem,
       destino,
+      distanciaKm,
       distancia: `${distanciaKm} km`,
       tempo: `${horas}h ${minutos}min`,
       paradas: generateRandomStops(distanciaKm)
@@ -88,11 +91,10 @@ export default function RotaGerada() {
     try {
       const { error } = await supabase.from('rotas').insert({
         user_id: user.id,
-        origem: rota.origem,
-        destino: rota.destino,
-        distancia: rota.distancia,
-        tempo: rota.tempo,
-        paradas: rota.paradas,
+        origin: rota.origem,
+        destination: rota.destino,
+        distance_km: rota.distanciaKm,
+        stops: rota.paradas,
         created_at: new Date().toISOString()
       });
       

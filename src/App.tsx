@@ -14,6 +14,7 @@ import ConfigurarMoto from "./pages/ConfigurarMoto";
 import RotaGerada from "./pages/RotaGerada";
 import TelaPremium from "./pages/TelaPremium";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,13 +28,12 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <AuthProvider>
         <MotoProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<TelaHome />} />
+              <Route path="/signup" element={<SignUp />} />
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/configurar-moto" element={<ConfigurarMoto />} />
@@ -43,6 +43,8 @@ const App = () => (
               <Route path="/suporte" element={<div className="p-8"><h1>Suporte</h1><p>Página em construção</p></div>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <Toaster />
+            <Sonner />
           </BrowserRouter>
         </MotoProvider>
       </AuthProvider>

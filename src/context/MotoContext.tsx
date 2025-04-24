@@ -39,15 +39,19 @@ export function MotoProvider({ children }: { children: ReactNode }) {
           .from('motos')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching moto data:', error);
           setMotoState(null);
         } else if (data) {
-          // Remove user_id from the data before setting state
           const { user_id, ...motoData } = data;
-          setMotoState(motoData as MotoData);
+          setMotoState({
+            model: motoData.model,
+            fuelType: motoData.fuel_type,
+            autonomyKm: motoData.autonomy_km,
+            tankCapacity: motoData.tank_capacity
+          });
         }
       } catch (error) {
         console.error('Error fetching moto data:', error);
@@ -65,10 +69,19 @@ export function MotoProvider({ children }: { children: ReactNode }) {
 
     try {
       setLoading(true);
+      // Transform data to match database column names
+      const dbData = {
+        user_id: user.id,
+        model: data.model,
+        fuel_type: data.fuelType,
+        autonomy_km: data.autonomyKm,
+        tank_capacity: data.tankCapacity
+      };
+      
       // Upsert moto data
       const { error } = await supabase
         .from('motos')
-        .upsert({ user_id: user.id, ...data }, { onConflict: 'user_id' });
+        .upsert(dbData, { onConflict: 'user_id' });
 
       if (error) {
         console.error('Error saving moto data:', error);

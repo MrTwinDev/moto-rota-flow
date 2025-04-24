@@ -11,10 +11,9 @@ import { supabase } from "@/lib/supabase";
 
 type SavedRoute = {
   id: string;
-  origem: string;
-  destino: string;
-  distancia: string;
-  tempo: string;
+  origin: string;
+  destination: string;
+  distance_km: number;
   created_at: string;
 };
 
@@ -80,7 +79,7 @@ export default function Dashboard() {
       <MenuLateral />
       <div className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Bem-vindo, {user?.name}</h1>
+          <h1 className="text-2xl font-bold">Bem-vindo, {user?.name || user?.email?.split('@')[0]}</h1>
           <Button variant="outline" onClick={handleLogout}>
             Sair
           </Button>
@@ -123,7 +122,7 @@ export default function Dashboard() {
                 <span className="font-semibold">
                   {loading ? "..." : 
                     recentRoutes.length > 0
-                      ? `${formatDate(recentRoutes[0].created_at)} - ${recentRoutes[0].distancia}`
+                      ? `${formatDate(recentRoutes[0].created_at)} - ${recentRoutes[0].distance_km} km`
                       : "—"}
                 </span>
               </div>
@@ -177,16 +176,16 @@ export default function Dashboard() {
                         <div className="flex flex-col">
                           <div className="flex items-center space-x-2">
                             <MapPin size={16} className="text-blue-500" />
-                            <span>{rota.origem}</span>
+                            <span>{rota.origin}</span>
                           </div>
                           <div className="flex items-center space-x-2 mt-1">
                             <MapPin size={16} className="text-green-500" />
-                            <span>{rota.destino}</span>
+                            <span>{rota.destination}</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-col items-end">
-                        <span className="font-semibold">{rota.distancia}</span>
+                        <span className="font-semibold">{rota.distance_km} km</span>
                         <span className="text-sm text-gray-500">{formatDate(rota.created_at)}</span>
                       </div>
                     </div>

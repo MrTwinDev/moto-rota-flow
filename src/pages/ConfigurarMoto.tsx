@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { MenuLateral } from "@/components/MenuLateral";
@@ -5,6 +6,7 @@ import { Bike, Fuel } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMoto } from "@/context/MotoContext";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const combustiveis = [
   { label: "Gasolina", value: "gasolina" },
@@ -15,6 +17,7 @@ const combustiveis = [
 export default function ConfigurarMoto() {
   const navigate = useNavigate();
   const { moto, setMoto, loading } = useMoto();
+  const { user } = useAuth();
   const [modelo, setModelo] = useState(moto?.model || "");
   const [tipoCombustivel, setTipoCombustivel] = useState(moto?.fuelType || "gasolina");
   const [autonomia, setAutonomia] = useState(moto?.autonomyKm?.toString() || "");
@@ -123,6 +126,13 @@ export default function ConfigurarMoto() {
               onChange={e => setTanque(e.target.value)}
               min={0}
             />
+          </div>
+          <div className="mt-2 text-center text-sm">
+            {!user && (
+              <p className="text-orange-600 mb-2">
+                ⚠️ Faça login para salvar suas configurações
+              </p>
+            )}
           </div>
           <Button 
             type="submit" 
