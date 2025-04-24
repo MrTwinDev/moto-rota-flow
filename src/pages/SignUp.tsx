@@ -19,32 +19,21 @@ export default function SignUp() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validações locais
+    // 1) validações iniciais
     if (!email.trim() || !password || !confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "Preencha todos os campos.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Preencha todos os campos.", variant: "destructive" });
       setIsLoading(false);
       return;
     }
     if (password !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "As senhas não coincidem.", variant: "destructive" });
       setIsLoading(false);
       return;
     }
 
     try {
-      // 1) Criar usuário no Auth
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-      });
+      // 2) criar usuário no Auth
+      const { error: signUpError } = await supabase.auth.signUp({ email: email.trim(), password });
       if (signUpError) {
         throw new Error(
           signUpError.message.includes("already registered")
@@ -53,24 +42,7 @@ export default function SignUp() {
         );
       }
 
-      // 2) Garantir que o usuário exista e criar/atualizar perfil
-      const user = signUpData.user;
-      if (!user) {
-        throw new Error("Não foi possível criar o usuário. Tente novamente.");
-      }
-      const { error: profileError } = await supabase
-        .from("users")
-        .upsert({
-          id: user.id,
-          email: user.email!,
-          name: user.email!.split("@")[0],
-          is_premium: false,
-        });
-      if (profileError) {
-        throw new Error("Falha ao salvar perfil: " + profileError.message);
-      }
-
-      // 3) Login automático
+      // 3) login imediato para obter sessão válida
       const { error: loginError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -79,15 +51,29 @@ export default function SignUp() {
         throw new Error("Erro ao entrar: " + loginError.message);
       }
 
-      // 4) Redireciona ao Dashboard
+      // 4) obtém o user ID agora que estamos autenticados
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+      if (!currentUser) {
+        throw new Error("Usuário autenticado não encontrado.");
+      }
+
+      // 5) upsert no perfil (RLS permite porque auth.uid() = currentUser.id)
+      const { error: profileError } = await supabase.from("users").upsert({
+        id: currentUser.id,
+        email: currentUser.email!,
+        name: currentUser.email!.split("@")[0],
+        is_premium: false,
+      });
+      if (profileError) {
+        throw new Error("Falha ao salvar perfil: " + profileError.message);
+      }
+
+      // 6) redireciona ao dashboard
       navigate("/dashboard");
     } catch (err: any) {
-      const msg = err.message || String(err);
-      toast({
-        title: "Erro ao cadastrar",
-        description: msg,
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao cadastrar", description: err.message || String(err), variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -96,9 +82,7 @@ export default function SignUp() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#28282e] to-[#191a23]">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">
-          Criar Conta no MotoRota BR
-        </h1>
+        <h1 className="text-2xl font-bold text-center mb-6">Criar Conta no MotoRota BR</h1>
         <form onSubmit={handleSignUp} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
