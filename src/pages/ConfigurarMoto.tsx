@@ -1,10 +1,10 @@
-
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { MenuLateral } from "@/components/MenuLateral";
 import { Bike, Fuel } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMoto } from "@/context/MotoContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const combustiveis = [
   { label: "Gasolina", value: "gasolina" },
@@ -14,21 +14,50 @@ const combustiveis = [
 
 export default function ConfigurarMoto() {
   const navigate = useNavigate();
-  const { moto, setMoto } = useMoto();
+  const { moto, setMoto, loading } = useMoto();
   const [modelo, setModelo] = useState(moto?.model || "");
   const [tipoCombustivel, setTipoCombustivel] = useState(moto?.fuelType || "gasolina");
   const [autonomia, setAutonomia] = useState(moto?.autonomyKm?.toString() || "");
   const [tanque, setTanque] = useState(moto?.tankCapacity?.toString() || "");
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (moto) {
+      setModelo(moto.model || "");
+      setTipoCombustivel(moto.fuelType || "gasolina");
+      setAutonomia(moto.autonomyKm?.toString() || "");
+      setTanque(moto.tankCapacity?.toString() || "");
+    }
+  }, [moto]);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setMoto({
-      model: modelo,
-      fuelType: tipoCombustivel,
-      autonomyKm: Number(autonomia),
-      tankCapacity: tanque ? Number(tanque) : undefined
-    });
-    navigate("/");
+    setIsSaving(true);
+    
+    try {
+      await setMoto({
+        model: modelo,
+        fuelType: tipoCombustivel,
+        autonomyKm: Number(autonomia),
+        tankCapacity: tanque ? Number(tanque) : undefined
+      });
+      
+      toast({
+        title: "Moto configurada",
+        description: "Suas configurações foram salvas com sucesso",
+      });
+      
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -47,6 +76,7 @@ export default function ConfigurarMoto() {
                 value={modelo}
                 onChange={e => setModelo(e.target.value)}
                 required
+                disabled={loading}
               />
               <Bike className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             </div>
@@ -94,7 +124,13 @@ export default function ConfigurarMoto() {
               min={0}
             />
           </div>
-          <Button type="submit" className="mt-2 w-full">Salvar e Voltar</Button>
+          <Button 
+            type="submit" 
+            className="mt-2 w-full"
+            disabled={isSaving || loading}
+          >
+            {isSaving ? "Salvando..." : "Salvar e Voltar"}
+          </Button>
         </form>
       </main>
     </div>
