@@ -1,10 +1,15 @@
 
-import { Bike, MapPin, Star, Info, Settings, User, Fuel, Route } from "lucide-react";
+import { Bike, MapPin, Star, Info, Settings, User, Home, Route } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
+  {
+    label: "Home",
+    icon: Home,
+    to: "/"
+  },
   {
     label: "Minha Moto",
     icon: Bike,
@@ -13,12 +18,12 @@ const menuItems = [
   {
     label: "Minhas Rotas",
     icon: Route,
-    to: "/tela-premium"
+    to: "/dashboard"
   },
   {
     label: "Sobre o App",
     icon: Info,
-    to: "/sobre" // Placeholder, to be implemented
+    to: "/sobre"
   },
   {
     label: "Assinar Premium",
@@ -28,7 +33,7 @@ const menuItems = [
   {
     label: "Suporte",
     icon: Settings,
-    to: "/suporte" // Placeholder, to be implemented
+    to: "/suporte"
   }
 ];
 
