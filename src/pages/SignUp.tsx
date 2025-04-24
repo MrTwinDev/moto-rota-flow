@@ -1,5 +1,5 @@
 // src/pages/SignUp.tsx
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,16 +15,18 @@ export default function SignUp() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    // 1) Validação local
-    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+    // Validações locais
+    if (!email.trim() || !password || !confirmPassword) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos",
+        description: "Preencha todos os campos.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
     if (password !== confirmPassword) {
@@ -33,59 +35,62 @@ export default function SignUp() {
         description: "As senhas não coincidem.",
         variant: "destructive",
       });
-      return;
-    }
-
-    setIsLoading(true);
-
-    // 2) Criar usuário no Supabase Auth (sem options.data)
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (signUpError) {
-      const msg = signUpError.message.includes("already registered")
-        ? "Este e-mail já está em uso."
-        : signUpError.message;
-      toast({ title: "Erro ao cadastrar", description: msg, variant: "destructive" });
       setIsLoading(false);
       return;
     }
 
-    // 3) Inserir perfil na tabela public.users
-    const user = signUpData.user;
-    if (user) {
+    try {
+      // 1) Criar usuário no Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
+      if (signUpError) {
+        throw new Error(
+          signUpError.message.includes("already registered")
+            ? "Este e-mail já está em uso."
+            : signUpError.message
+        );
+      }
+
+      // 2) Garantir que o usuário exista e criar/atualizar perfil
+      const user = signUpData.user;
+      if (!user) {
+        throw new Error("Não foi possível criar o usuário. Tente novamente.");
+      }
       const { error: profileError } = await supabase
         .from("users")
-        .insert({
+        .upsert({
           id: user.id,
-          email: user.email,
-          name: user.email.split("@")[0],
+          email: user.email!,
+          name: user.email!.split("@")[0],
           is_premium: false,
         });
       if (profileError) {
-        toast({ title: "Erro", description: profileError.message, variant: "destructive" });
-        setIsLoading(false);
-        return;
+        throw new Error("Falha ao salvar perfil: " + profileError.message);
       }
 
-      // 4) Login automático
+      // 3) Login automático
       const { error: loginError } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
       if (loginError) {
-        toast({
-          title: "Erro ao entrar",
-          description: loginError.message,
-          variant: "destructive",
-        });
-      } else {
-        navigate("/dashboard");
+        throw new Error("Erro ao entrar: " + loginError.message);
       }
-    }
 
-    setIsLoading(false);
+      // 4) Redireciona ao Dashboard
+      navigate("/dashboard");
+    } catch (err: any) {
+      const msg = err.message || String(err);
+      toast({
+        title: "Erro ao cadastrar",
+        description: msg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -133,7 +138,7 @@ export default function SignUp() {
           </Button>
           <div className="text-center mt-4">
             <p className="text-sm text-gray-500">
-              Já tem uma conta?{" "}
+              Já tem conta?{" "}
               <Link to="/login" className="text-blue-600 hover:underline">
                 Entre aqui
               </Link>
